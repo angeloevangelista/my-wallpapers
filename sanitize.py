@@ -4,10 +4,17 @@ from PIL import Image
 
 folder_path = "wallpapers"
 rejected_folder = "rejected"
+whitelist_file = "whitelist.txt"
 
-MIN_WIDTH = 2048
+MIN_WIDTH = 1920
 MIN_HEIGHT = 1080
-MIN_DPI = 150
+MIN_DPI = 72
+
+if os.path.isfile(whitelist_file):
+  with open(whitelist_file, "r") as f:
+    whitelist = set(line.strip() for line in f if line.strip())
+else:
+  whitelist = set()
 
 def move_low_quality_images(folder):
   os.makedirs(rejected_folder, exist_ok=True)
@@ -16,6 +23,10 @@ def move_low_quality_images(folder):
     file_path = os.path.join(folder, filename)
 
     if not os.path.isfile(file_path) or file_path.startswith(rejected_folder):
+      continue
+
+    if filename in whitelist:
+      print(f"Whitelisted, keeping {filename}")
       continue
 
     try:
