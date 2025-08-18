@@ -3,7 +3,7 @@ import shutil
 from PIL import Image
 
 folder_path = "wallpapers"
-rejected_folder = os.path.join(folder_path, "rejected")
+rejected_folder = "rejected"
 
 MIN_WIDTH = 2048
 MIN_HEIGHT = 1080
