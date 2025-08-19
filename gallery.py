@@ -191,69 +191,114 @@ GALLERY_TEMPLATE = """
   }
   </style>
   <script>
-  let deleteTarget = null;
+    let deleteTarget = null;
+    let imageList = [];   // all filenames
+    let currentIndex = -1; // index of previewed image
 
-  function deleteImage(filename) {
-    deleteTarget = filename;
-    document.getElementById("confirm-modal").style.display = "flex";
-  }
+    // initialize list of images from template
+    window.addEventListener("DOMContentLoaded", () => {
+      imageList = [...document.querySelectorAll(".image-card")].map(card => card.id.replace("card-", ""));
+    });
 
-  async function confirmDelete() {
-    if (!deleteTarget) return;
-    try {
-    let response = await fetch(`/gallery/${deleteTarget}?folder={{ current_folder }}`, { method: "DELETE" });
-    let result = await response.json();
-    if (response.ok && result.success) {
-      let card = document.getElementById("card-" + deleteTarget);
-      if (card) card.remove();
-      closeModal(); // close preview if open
-    } else {
-      alert("❌ Failed: " + (result.message || "Unknown error"));
+    function deleteImage(filename) {
+      deleteTarget = filename;
+      document.getElementById("confirm-modal").style.display = "flex";
     }
-    } catch (err) {
-    alert("⚠️ Network error: " + err);
-    }
-    closeConfirm();
-  }
 
-  function closeConfirm() {
-    document.getElementById("confirm-modal").style.display = "none";
-    deleteTarget = null;
-  }
+    async function confirmDelete() {
+      if (!deleteTarget) return;
+      try {
+        let response = await fetch(`/gallery/${deleteTarget}?folder={{ current_folder }}`, { method: "DELETE" });
+        let result = await response.json();
+        if (response.ok && result.success) {
+          let card = document.getElementById("card-" + deleteTarget);
+          if (card) card.remove();
 
-  // Modal logic for image preview
-  function openModal(src, filename) {
-    let modal = document.getElementById("modal");
-    let modalImg = document.getElementById("modal-img");
-    modalImg.src = src;
-    modal.dataset.filename = filename;
-    modal.style.display = "flex";
-  }
-  function closeModal() {
-    document.getElementById("modal").style.display = "none";
-  }
+          // remove from imageList
+          let idx = imageList.indexOf(deleteTarget);
+          if (idx !== -1) {
+            imageList.splice(idx, 1);
 
-  // Keyboard shortcuts
-  document.addEventListener("keydown", function(event) {
-    let confirmVisible = document.getElementById("confirm-modal").style.display === "flex";
-    let previewVisible = document.getElementById("modal").style.display === "flex";
+            // if this was the currently opened image, adjust
+            if (currentIndex === idx) {
+              if (imageList.length === 0) {
+                closeModal();
+              } else {
+                // show next if available, else previous
+                currentIndex = Math.min(idx, imageList.length - 1);
+                showImage(currentIndex);
+              }
+            } else if (currentIndex > idx) {
+              currentIndex--; // shift left since array shrank
+            }
+          }
 
-    if (confirmVisible) {
-    if (event.key === "Enter") {
-      confirmDelete();
-    } else if (event.key === "Escape") {
+        } else {
+          alert("❌ Failed: " + (result.message || "Unknown error"));
+        }
+      } catch (err) {
+        alert("⚠️ Network error: " + err);
+      }
       closeConfirm();
     }
-    } else if (previewVisible) {
-    if (event.key === "Escape") {
-      closeModal();
-    } else if (event.key === "Delete") {
+
+    function closeConfirm() {
+      document.getElementById("confirm-modal").style.display = "none";
+      deleteTarget = null;
+    }
+
+    // Show image in modal by index
+    function showImage(index) {
+      let filename = imageList[index];
+      if (!filename) return;
       let modal = document.getElementById("modal");
-      let filename = modal.dataset.filename;
-      if (filename) deleteImage(filename);
+      let modalImg = document.getElementById("modal-img");
+      modalImg.src = "/images/{{ current_folder }}/" + filename;
+      modal.dataset.filename = filename;
+      modal.style.display = "flex";
+      currentIndex = index;
     }
+
+    function openModal(src, filename) {
+      let idx = imageList.indexOf(filename);
+      if (idx === -1) return;
+      showImage(idx);
     }
-  });
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+      currentIndex = -1;
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", function(event) {
+      let confirmVisible = document.getElementById("confirm-modal").style.display === "flex";
+      let previewVisible = document.getElementById("modal").style.display === "flex";
+
+      if (confirmVisible) {
+        if (event.key === "Enter") {
+          confirmDelete();
+        } else if (event.key === "Escape") {
+          closeConfirm();
+        }
+      } else if (previewVisible) {
+        if (event.key === "Escape") {
+          closeModal();
+        } else if (event.key === "Delete") {
+          let modal = document.getElementById("modal");
+          let filename = modal.dataset.filename;
+          if (filename) deleteImage(filename);
+        } else if (event.key === "ArrowRight") {
+          if (currentIndex < imageList.length - 1) {
+            showImage(currentIndex + 1);
+          }
+        } else if (event.key === "ArrowLeft") {
+          if (currentIndex > 0) {
+            showImage(currentIndex - 1);
+          }
+        }
+      }
+    });
   </script>
 </head>
 <body>
