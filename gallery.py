@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 FOLDERS = ['rejected', 'wallpapers']
 
-# HTML template with folder tabs
 GALLERY_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -108,6 +107,27 @@ GALLERY_TEMPLATE = """
   }
   .delete-btn:hover {
     background: rgba(200, 35, 51, 0.95);
+  }
+
+  /* Floating filter input */
+  #filter-bar {
+    position: fixed;
+    top: -60px; /* hidden initially */
+    right: 20px;
+    background: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: top 0.3s ease-in-out;
+    z-index: 10000;
+  }
+  #filter-input {
+    width: 200px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
   }
 
   /* Image Preview Modal */
@@ -299,9 +319,40 @@ GALLERY_TEMPLATE = """
         }
       }
     });
+
+    // Show/hide filter bar on scroll direction
+    let lastScrollY = window.scrollY;
+    window.addEventListener("scroll", () => {
+      let filterBar = document.getElementById("filter-bar");
+      if (window.scrollY < lastScrollY) {
+        // scrolling up
+        filterBar.style.top = "10px";
+      } else {
+        // scrolling down
+        filterBar.style.top = "-60px";
+      }
+      lastScrollY = window.scrollY;
+    });
+
+    // Filter images by filename
+    document.addEventListener("DOMContentLoaded", () => {
+      let filterInput = document.getElementById("filter-input");
+      filterInput.addEventListener("input", () => {
+        let term = filterInput.value.toLowerCase();
+        document.querySelectorAll(".image-card").forEach(card => {
+          let filename = card.querySelector(".filename").textContent.toLowerCase();
+          card.style.display = filename.includes(term) ? "" : "none";
+        });
+      });
+    });
   </script>
 </head>
 <body>
+  <!-- Floating Filter Input -->
+  <div id="filter-bar">
+    <input type="text" id="filter-input" placeholder="🔍 Filter images...">
+  </div>
+
   <h1>📷 Image Gallery</h1>
 
   <!-- Folder Tabs -->
