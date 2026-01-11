@@ -1,0 +1,8 @@
+pillow==11.3.0
+Flask==3.1.1
+transformers==4.57.3
+
+torch
+pillow
+transformers
+accelerate
